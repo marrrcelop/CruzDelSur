@@ -17,12 +17,18 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        // Solo los ADMIN pueden entrar aquí
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // ADMIN o USER pueden entrar aquí
+                        .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -32,12 +38,21 @@ public class SecurityConfig {
     }
     @Bean
     public UserDetailsService userDetailsService() {
+        // Usuario normal
         UserDetails user = User.builder()
-                .username("admin") // El usuario que pusiste en Postman
-                .password("{noop}123") // {noop} le dice a Spring que la contraseña no está encriptada por ahora
+                .username("tito")
+                .password("{noop}123")
                 .roles("USER")
                 .build();
 
-        return new InMemoryUserDetailsManager(user);
+        // Administrador
+        UserDetails admin = User.builder()
+                .username("admin")
+                .password("{noop}admin123")
+                .roles("ADMIN")
+                .build();
+
+        return new InMemoryUserDetailsManager(user, admin);
     }
+
 }
